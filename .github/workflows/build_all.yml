@@ -64,7 +64,7 @@ jobs:
         - name: Unpack SDR++ source and core lib
           run: mkdir sdrpp_lib ; 7z x master.zip -osdrpp_lib ; 7z x sdrpp_windows_x64.zip -osdrpp_lib ; cp .github/workflows/sdrpp_module_hack.cmake ./
         - name: Prepare MinGW
-          run: C:/msys64/msys2_shell.cmd -defterm -here -no-start -mingw64 -c "pacman --noconfirm -S --needed base-devel mingw-w64-x86_64-binutils mingw-w64-x86_64-tools"
+          run: C:/msys64/msys2_shell.cmd -defterm -here -no-start -mingw64 -c "pacman --noconfirm -Sy --needed base-devel mingw-w64-x86_64-binutils mingw-w64-x86_64-tools"
         - name: Generate .def file
           working-directory: sdrpp_lib/sdrpp_windows_x64
           run: C:/msys64/msys2_shell.cmd -defterm -here -no-start -mingw64 -c "gendef sdrpp_core.dll"
