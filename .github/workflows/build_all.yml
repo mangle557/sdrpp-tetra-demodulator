@@ -67,7 +67,40 @@ jobs:
           run: C:/msys64/msys2_shell.cmd -defterm -here -no-start -ucrt64 -c "pacman --noconfirm -Sy --needed base-devel mingw-w64-ucrt-x86_64-binutils mingw-w64-ucrt-x86_64-tools"
         - name: Generate .def file
           working-directory: sdrpp_lib/sdrpp_windows_x64
-          run: C:/msys64/msys2_shell.cmd -defterm -here -no-start -ucrt64 -c "gendef sdrpp_core.dll"
+          shell: python
+          run: |
+            import subprocess, sys
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "pefile"])
+            import pefile
+
+            dll = "sdrpp_core.dll"
+            out = "sdrpp_core.def"
+
+            pe = pefile.PE(dll, fast_load=True)
+            pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_EXPORT"]])
+
+            def is_code(rva):
+                for s in pe.sections:
+                    if s.VirtualAddress <= rva < s.VirtualAddress + max(s.Misc_VirtualSize, s.SizeOfRawData):
+                        return bool(s.Characteristics & 0x20000000)  # IMAGE_SCN_MEM_EXECUTE
+                return True
+
+            lines = ["LIBRARY sdrpp_core.dll", "EXPORTS"]
+            n_code = n_data = 0
+            for e in pe.DIRECTORY_ENTRY_EXPORT.symbols:
+                if not e.name:
+                    continue
+                name = e.name.decode()
+                if is_code(e.address):
+                    lines.append("    " + name)
+                    n_code += 1
+                else:
+                    lines.append("    " + name + " DATA")
+                    n_data += 1
+
+            with open(out, "w", newline="\n") as f:
+                f.write("\n".join(lines) + "\n")
+            print(f"{out}: {n_code} functions, {n_data} data exports")
         - name: Generate .lib file
           working-directory: sdrpp_lib/sdrpp_windows_x64
           # run: |
