@@ -76,7 +76,7 @@ jobs:
             dll = "sdrpp_core.dll"
             out = "sdrpp_core.def"
 
-            pe = pefile.PE(dll, fast_load=True)
+            pe = pefile.PE(dll, fast_load=True, max_symbol_exports=1000000, max_repeated_symbol=1000000)
             pe.parse_data_directories(directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_EXPORT"]])
 
             def is_code(rva):
@@ -101,6 +101,7 @@ jobs:
             with open(out, "w", newline="\n") as f:
                 f.write("\n".join(lines) + "\n")
             print(f"{out}: {n_code} functions, {n_data} data exports")
+            assert n_code + n_data == len([e for e in pe.DIRECTORY_ENTRY_EXPORT.symbols if e.name]) and len(pe.DIRECTORY_ENTRY_EXPORT.symbols) == pe.DIRECTORY_ENTRY_EXPORT.struct.NumberOfFunctions, "export count mismatch"
         - name: Generate .lib file
           working-directory: sdrpp_lib/sdrpp_windows_x64
           # run: |
